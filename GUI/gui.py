@@ -50,7 +50,7 @@ tasks = ['Task 1: down to up, sparsity constraints',
 
 global ind_, type_, mu_e, mu_i, a_e, a_i, cost_node, w_e, w_i, target_high, target_low
 global bestControl_init, costnode_init, bestControl_0, bestState_0, costnode_0
-global case, case0
+global case
 
 case = '1'
 
@@ -95,7 +95,15 @@ fig_opt_cntrl_inh.layout.yaxis['range'] = [0., 150.]
 fig_opt_cntrl_inh.layout.yaxis2['range'] = [-1.6,0.2]
 fig_opt_cntrl_inh.layout.title['text'] = 'Inhibitory node'
 
-fig_test = go.FigureWidget(data=[data_background])
+fig_tab_cost = go.Figure(
+    data=go.Table(
+        header=dict(values=['<b>Cost</b>', 'Excitatory', 'Inhibitory'], fill_color=layout.midgrey, align='center', font=dict(size = 20), height=28),
+        cells=dict(values=[['Precision', 'Sparsity', 'Energy'], [0., 0., 0.], [0., 0., 0.]], fill_color=[[layout.lightgrey, layout.lightgrey, layout.darkgrey]*3], font=dict(size = 20), height=28)
+        )
+    )
+
+
+case = '1'
 
 app = JupyterDash(__name__)
 app.layout = html.Div([
@@ -114,7 +122,7 @@ app.layout = html.Div([
         dcc.Graph(id='bifurcation_diagram',
                  figure=fig_bifurcation,
                  ),        
-    ], style={'width': '40%', 'display': 'inline-block', 'padding': '0 20'}),
+    ], style={'width': '50%', 'display': 'inline-block', 'padding': '0 0'}),
     html.Div([
         html.H3("Time series for step current stimulation"),
         html.Div([
@@ -138,10 +146,27 @@ app.layout = html.Div([
                  figure=fig_opt_cntrl_inh,
                  ),
             ], style={'width': '48%', 'float': 'right', 'display': 'inline-block'}),
-        html.H3("Cost"),
-        html.Div(id='cost_output'),
+        #html.P(id='cost_output'),
+        html.Div([
+            dcc.Graph(id='tab_cost',
+                 figure=fig_tab_cost,
+                 ),
+            ], style={'width': '50%', 'float': 'left', 'display': 'inline-block'}),
     ], style={'width': '49%', 'float': 'right', 'display': 'inline-block', 'padding': '0 20'}),
 ])
+
+
+def set_tab_cost(d_cost, case_):
+
+    tab_ = go.Figure(
+    data=go.Table(
+        header=dict(values=['<b>Cost</b>', 'Excitatory', 'Inhibitory'], fill_color=layout.midgrey, align='center', font=dict(size = 20), height=28),
+        cells=dict(values=d_cost, fill_color=color_array, font=dict(size = 20), height=28)
+        )
+    )
+           
+    return tab_
+
 
 @app.callback(
         Output('bifurcation_diagram', 'figure'),
@@ -149,17 +174,15 @@ app.layout = html.Div([
         Output('opt_cntrl_inh', 'figure'),
         Output('time_series_exc', 'figure'),
         Output('time_series_inh', 'figure'),
-        Output('cost_output', 'children'),
+        Output('tab_cost', 'figure'),
         Input('bifurcation_diagram', 'clickData'),
         Input('task_dropdown', 'value'))
 def set_marker(selection_click, selection_drop):
     
-    cost_output_ = ''
-    
     if not dash.callback_context.triggered:
-        return fig_bifurcation, fig_opt_cntrl_exc, fig_opt_cntrl_inh, fig_time_series_exc, fig_time_series_inh, cost_output_
+        return fig_bifurcation, fig_opt_cntrl_exc, fig_opt_cntrl_inh, fig_time_series_exc, fig_time_series_inh, fig_tab_cost
     
-    global ind_, type_, mu_e, mu_i, a_e, a_i, cost_node, w_e, w_i, target_high, target_low
+    global ind_, type_, mu_e, mu_i, a_e, a_i, cost_node, w_e, w_i, target_high, target_low, case
     global bestControl_init, costnode_init, bestControl_0, bestState_0, costnode_0
         
     if dash.callback_context.triggered[0]['prop_id'] == 'bifurcation_diagram.clickData':
@@ -174,6 +197,7 @@ def set_marker(selection_click, selection_drop):
         if selection_click['points'][0]['curveNumber'] == 0:
             data.set_opt_cntrl_plot_zero(fig_opt_cntrl_exc, [0,1])
             data.set_opt_cntrl_plot_zero(fig_opt_cntrl_inh, [0,1])
+            fig_tab_cost.data[0]['cells']['values'] = [['Precision', 'Sparsity', 'Energy'], [0., 0., 0.], [0., 0., 0.]]
         
         else:        
             for i in range(len(ind_)):
@@ -192,15 +216,24 @@ def set_marker(selection_click, selection_drop):
             fig_opt_cntrl_inh.data[0].y = bestState_0[index_][0,1,:]
             fig_opt_cntrl_inh.data[1].x = time_
             fig_opt_cntrl_inh.data[1].y = bestControl_0[index_][0,1,:]
+
+            d_cost = [['Precision', 'Sparsity', 'Energy'], [0., 0., 0.], [0., 0., 0.]]
             
             c_p = costnode_0[index_][0][0,:]
-            cost_output_p = 'Precision: {:.2f}'.format(c_p[0]) + ' (E), {:.2f}'.format(c_p[1]) + ' (I). '
+            d_cost[1][0] = round(c_p[0], 4)
+            d_cost[2][0] = round(c_p[1], 4)
             c_s = costnode_0[index_][2][0,:]
-            cost_output_s = 'Sparsity: {:.2f}'.format(c_s[0]) + ' (E), {:.2f}'.format(c_s[1]) + ' (I). '
+            d_cost[1][1] = round(c_s[0], 4)
+            d_cost[2][1] = round(c_s[1], 4)
             c_e = costnode_0[index_][1][0,:]
-            cost_output_e = 'Energy: {:.2f}'.format(c_e[0]) + ' (E), {:.2f}'.format(c_e[1]) + ' (I). '
+            d_cost[1][2] = round(c_e[0], 4)
+            d_cost[2][2] = round(c_e[1], 4)
             
-            cost_output_ = cost_output_p + cost_output_s + cost_output_e
+            fig_tab_cost.data[0]['cells']['values'] = d_cost
+            print("set tab cost ", d_cost, case)
+
+            if case in ['1', '3']:
+                print('1, 3')
             
         time_, exc_trace_, inh_trace_ = data.trace_step(aln, selection_click['points'][0]['x'],
                                                         selection_click['points'][0]['y'])
@@ -211,7 +244,6 @@ def set_marker(selection_click, selection_drop):
         fig_time_series_inh.data[1].y = inh_trace_
     
     elif dash.callback_context.triggered[0]['prop_id'] == 'task_dropdown.value':
-        global case
         value = dash.callback_context.triggered[0]['value']
         
         case0 = case
@@ -243,8 +275,16 @@ def set_marker(selection_click, selection_drop):
         elif case0 in ['3', '4'] and case in ['1', '2']:
             fig_opt_cntrl_exc.layout.yaxis2['range'] = [-0.2,2.]
             fig_opt_cntrl_inh.layout.yaxis2['range'] = [-1.6,0.2]
+
+        if case in ['1', '3']:
+            color_array = [[layout.lightgrey, layout.lightgrey, layout.darkgrey]*3]
+        else:
+            color_array = [[layout.lightgrey, layout.darkgrey, layout.lightgrey]*3]
             
-    return fig_bifurcation, fig_opt_cntrl_exc, fig_opt_cntrl_inh, fig_time_series_exc, fig_time_series_inh, cost_output_
+        fig_tab_cost.data[0]['cells']['values'] = [['Precision', 'Sparsity', 'Energy'], [0., 0., 0.], [0., 0., 0.]]
+        fig_tab_cost.data[0]['cells']['fill_color'] = color_array
+            
+    return fig_bifurcation, fig_opt_cntrl_exc, fig_opt_cntrl_inh, fig_time_series_exc, fig_time_series_inh, fig_tab_cost
 
 
 app.run_server()
