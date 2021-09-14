@@ -475,7 +475,9 @@ def get_scatter_data_1(ind_, type_, mu_e, mu_i, a_e, a_i):
             size=[layout.markersize] * len(data1_x)
         ),
         mode='markers',
-        name='Excitatory current dominant',
+        name='Excitatory control prevailing',
+        #textfont=dict(size=layout.text_fontsize, color=layout.darkgrey),
+        showlegend=True,
         hoverinfo='x+y',
         uid='1',
         )
@@ -491,7 +493,7 @@ def get_scatter_data_1(ind_, type_, mu_e, mu_i, a_e, a_i):
             size=[layout.markersize] * len(data2_x),
         ),
         mode='markers',
-        name='Inhibitory current dominant',
+        name='Inhibitory control prevailing',
         hoverinfo='x+y',
         uid='2',
         )

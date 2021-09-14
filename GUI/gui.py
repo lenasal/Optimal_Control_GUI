@@ -43,10 +43,10 @@ boundary_LC_up_inh = load_array[1]
 
 print('boundaries loaded')
 
-tasks = ['Task 1: down to up, sparsity constraints',
-         'Task 2: down to up, energy constraints',
-         'Task 3: up to down, sparsity constraints',
-         'Task 4: up to down, energy constraints']
+tasks = ['LH1: low to high, L1 cost constraints',
+         'LH2: low to high, L2 cost constraints',
+         'HL1: high to low, L1 cost constraints',
+         'HL2: high to low, L2 cost constraints']
 
 global ind_, type_, mu_e, mu_i, a_e, a_i, cost_node, w_e, w_i, target_high, target_low
 global bestControl_init, costnode_init, bestControl_0, bestState_0, costnode_0
@@ -97,8 +97,8 @@ fig_opt_cntrl_inh.layout.title['text'] = 'Inhibitory node'
 
 fig_tab_cost = go.Figure(
     data=go.Table(
-        header=dict(values=['<b>Cost</b>', 'Excitatory', 'Inhibitory'], fill_color=layout.midgrey, align='center', font=dict(size = 20), height=28),
-        cells=dict(values=[['Precision', 'Sparsity', 'Energy'], [0., 0., 0.], [0., 0., 0.]], fill_color=[[layout.lightgrey, layout.lightgrey, layout.darkgrey]*3], font=dict(size = 20), height=28)
+        header=dict(values=['<b>Cost</b>', 'Excitatory', 'Inhibitory'], fill_color=layout.midgrey, align='center', font=dict(size=layout.text_fontsize), height=layout.text_fontsize+10),
+        cells=dict(values=[['Precision', 'Sparsity', 'Energy'], [0., 0., 0.], [0., 0., 0.]], fill_color=[[layout.lightgrey, layout.lightgrey, layout.darkgrey]*3], font=dict(size=layout.text_fontsize), height=layout.text_fontsize+10)
         )
     )
 
@@ -112,8 +112,11 @@ app.layout = html.Div([
         html.H3("Task"),
         html.Label([
               dcc.Dropdown(
-                  id='task_dropdown', clearable=False,
-                  value=tasks[0], options=[
+                  id='task_dropdown',
+                  style={'font-size': '18px'},
+                  clearable=False,
+                  value=tasks[0],
+                  options=[
                       {'label': t, 'value': t}
                       for t in tasks
                   ])
@@ -122,50 +125,38 @@ app.layout = html.Div([
         dcc.Graph(id='bifurcation_diagram',
                  figure=fig_bifurcation,
                  ),        
-    ], style={'width': '50%', 'display': 'inline-block', 'padding': '0 0'}),
+    ], style={'width': '26%', 'display': 'inline-block', 'padding': '0 0'}),
     html.Div([
-        html.H3("Time series for step current stimulation"),
+        html.H3("Time series for stimulation with rectangle pulse"),
         html.Div([
             dcc.Graph(id='time_series_exc',
                  figure=fig_time_series_exc,
                  ),
-            ], style={'width': '48%', 'display': 'inline-block', 'padding': '0 20'}),
+            ], style={'width': '48%', 'display': 'inline-block', 'padding': '0 0'}),
         html.Div([
             dcc.Graph(id='time_series_inh',
                  figure=fig_time_series_inh,
                  ),
             ], style={'width': '48%', 'float': 'right', 'display': 'inline-block'}),
-        html.H3("Optimal control and transition"),
+        html.H3("Optimal transition and control"),
         html.Div([
             dcc.Graph(id='opt_cntrl_exc',
                  figure=fig_opt_cntrl_exc,
                  ),
-            ], style={'width': '48%', 'display': 'inline-block', 'padding': '0 20'}),
+            ], style={'width': '48%', 'display': 'inline-block', 'padding': '0 0'}),
         html.Div([
             dcc.Graph(id='opt_cntrl_inh',
                  figure=fig_opt_cntrl_inh,
                  ),
             ], style={'width': '48%', 'float': 'right', 'display': 'inline-block'}),
         #html.P(id='cost_output'),
-        html.Div([
-            dcc.Graph(id='tab_cost',
-                 figure=fig_tab_cost,
-                 ),
-            ], style={'width': '50%', 'float': 'left', 'display': 'inline-block'}),
-    ], style={'width': '49%', 'float': 'right', 'display': 'inline-block', 'padding': '0 20'}),
+    ], style={'width': '49%', 'float': 'right', 'display': 'inline-block', 'padding': '0 0'}),
+    html.Div([
+        dcc.Graph(id='tab_cost',
+                figure=fig_tab_cost,
+                ),
+        ], style={'width': '25%', 'float': 'right', 'display': 'inline-block'}),
 ])
-
-
-def set_tab_cost(d_cost, case_):
-
-    tab_ = go.Figure(
-    data=go.Table(
-        header=dict(values=['<b>Cost</b>', 'Excitatory', 'Inhibitory'], fill_color=layout.midgrey, align='center', font=dict(size = 20), height=28),
-        cells=dict(values=d_cost, fill_color=color_array, font=dict(size = 20), height=28)
-        )
-    )
-           
-    return tab_
 
 
 @app.callback(
@@ -231,9 +222,6 @@ def set_marker(selection_click, selection_drop):
             
             fig_tab_cost.data[0]['cells']['values'] = d_cost
             print("set tab cost ", d_cost, case)
-
-            if case in ['1', '3']:
-                print('1, 3')
             
         time_, exc_trace_, inh_trace_ = data.trace_step(aln, selection_click['points'][0]['x'],
                                                         selection_click['points'][0]['y'])

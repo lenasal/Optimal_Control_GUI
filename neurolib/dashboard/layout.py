@@ -92,43 +92,15 @@ def getcolors():
 def getcolormap():
     return cmap
 
-text_fontsize = 18
-buttons_fontsize = 18
+text_fontsize = 22
 
 font_info = dict(
         size=text_fontsize,
         color=darkgrey,
         )
 
-font_buttons = dict(
-        size=buttons_fontsize,
-        color=darkgrey,
-        )
-
 
 ##### LABELS
-def get_info_text():
-    return go.Annotation(
-        x=info_x,
-        y=info_y,
-        text=("<b>Task:</b><br><br>"
-              "<b>Cost measure:</b><br><br>"
-              "<b>Cost weights:</b><br><br>"
-              "<b>Initial guess:</b><br><br>"
-              "<b>Sim. duration:"),#"</b><br><br>"
-              #"<b>Precision cost:"),
-        xref="paper",
-        yref="paper",
-        showarrow=False,
-        font=font_info,
-        align="left",
-        bordercolor=darkgrey,
-        borderwidth=1,
-        borderpad=8,
-        bgcolor=lightgrey,
-        opacity=0.8,
-        captureevents=True,
-        )
 
 def get_label_bistable():
     return go.Annotation(
@@ -149,7 +121,7 @@ def get_label_osc():
     return go.Annotation(
         x=label_LC_x,
         y=label_LC_y,
-        text=("LC"),
+        text=("oscillations"),
         xref="paper",
         yref="paper",
         showarrow=False,
@@ -185,7 +157,7 @@ def get_label_down():
         showarrow=False,
         font=dict(
             size=text_fontsize,
-            color=midgrey
+            color=darkgrey
             ),
         align="center",
         )
@@ -200,7 +172,7 @@ def get_label_up():
         showarrow=False,
         font=dict(
             size=text_fontsize,
-            color=midgrey
+            color=darkgrey
             ),
         align="center",
         )
@@ -211,7 +183,7 @@ def get_label_exc():
         xanchor='center',
         y=e_i_y,
         yanchor='top',
-        text=("<b>Excitatory node</b>"),
+        text=("<b>Excitatory population</b>"),
         xref="paper",
         yref="paper",
         showarrow=False,
@@ -228,7 +200,7 @@ def get_label_inh():
         xanchor='center',
         y=e_i_y,
         yanchor='top',
-        text=("<b>Inhibitory node</b>"),
+        text=("<b>Inhibitory population</b>"),
         xref="paper",
         yref="paper",
         showarrow=False,
@@ -258,17 +230,6 @@ def get_label_cost():
         align="left",
         )
 
-def change_cost_layout(cost, case_):
-    if True:
-        return ("P:   " + str(round(cost[0][0][0],4)) + " (e) + " + str(round(cost[0][0][1],4)) + " (i)" + "<br>" # precision, network node, type node
-                "S:   " + str(round(cost[2][0][0],4)) + " (e) + " + str(round(cost[2][0][1],4)) + " (i)" + "<br>"
-                "E:   " + str(round(cost[1][0][0],4)) + " (e) + " + str(round(cost[1][0][1],4)) + " (i)" + "<br>")
-    else:
-        return ("P:   " + str(round(cost[0][0][0],4)) + " (e) + " + str(round(cost[0][0][1],4)) + " (i)" + "<br>" # precision, network node, type node
-                "S:   " + str(round(cost[2][0][2],4)) + " (ee) + " + str(round(cost[2][0][3],4)) + " (ei) + " + str(round(cost[2][0][4],4)) + " (ie) + " + str(round(cost[2][0][5],4)) + " (ii)""<br>"
-                "E:   " + str(round(cost[1][0][2],4)) + " (ee) + " + str(round(cost[1][0][3],4)) + " (ei) + " + str(round(cost[1][0][4],4)) + " (ie) + " + str(round(cost[1][0][5],4)) + " (ii)""<br>")
-
-
 def boundary_path(p_e, p_i):
     polygon = "M" + str(p_e[0]) + "," + str(p_i[0])
     for i in range(1,len(p_e)):
@@ -289,6 +250,7 @@ def get_layout_bifurcation():
         y=legend_y,
         xanchor="right",
         x=legend_x,
+        font=dict(size=text_fontsize, color=darkgrey),
     ),
     #title=dict(text="Case 00000",font=dict(size=1,color=midgrey),pad=dict(l=2, r=2, t=2, b=2),),
     #legend_title="Legend Title",
@@ -298,10 +260,12 @@ def get_layout_bifurcation():
         constrain="domain",
         tick0=0.,
         dtick=0.1,
+        tickfont=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
         gridcolor=midgrey,
         title=dict(
-            text="External excitatory current [nA]",
-            standoff=0.,
+            text="External input to the excitatory population [nA]",
+            font=dict(size=text_fontsize, color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
+            standoff=10.,
                   ),
     ),
     yaxis=dict(
@@ -311,10 +275,12 @@ def get_layout_bifurcation():
         scaleratio = 1,
         tick0=0.,
         dtick=0.1,
+        tickfont=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
         gridcolor=midgrey,
         title=dict(
-            text="External inhibitory current [nA]",
-            standoff=0.,
+            text="External input to the inhibitory population [nA]",
+            font=dict(size=text_fontsize, color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
+            standoff=10.,
                   ),
         
     ),
@@ -335,17 +301,19 @@ def get_layout_exc():
         xanchor="right",
         x=legend_x,
     ),
-    title=dict(text="Excitatory node",font=dict(size=24,color=darkgrey),pad=dict(l=00, r=2, t=2, b=2)),
+    title=dict(text="Excitatory population",font=dict(size=text_fontsize,color=darkgrey),pad=dict(l=2, r=2, t=2, b=2)),
     xaxis=dict(
         domain=[0., 1.],
         range=[0.,step_current_duration],
         constrain="domain",
         tick0=0.,
         dtick=step_current_duration/5.,
+        tickfont=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
         gridcolor=midgrey,
         title=dict(
             text="Simulation time [ms]",
-            standoff=0.,
+            font=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
+            standoff=10.,
                   ),
         position=0.,
         zeroline=True,
@@ -358,11 +326,13 @@ def get_layout_exc():
         range=[-max_step_current-1., max_step_current+1.],
         constrain="domain",
         tick0=0.,
-        dtick=1.,
+        dtick=2.,
+        tickfont=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
         gridcolor=midgrey,
         title=dict(
-            text="Control current [nA]",
-            standoff=0.,
+            text="Control [nA]",
+            font=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
+            standoff=10.,
                   ),
         #position=x2_axis_end,
         zeroline=True,
@@ -375,10 +345,12 @@ def get_layout_exc():
         range=[0.,200.],
         constrain="domain",
         tick0=0.,
-        dtick=25.,
+        dtick=50.,
+        tickfont=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
         gridcolor=midgrey,
         title=dict(
             text="Activity [Hz]",
+            font=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
             standoff=10.,
                   ),
         side='right',
@@ -404,17 +376,19 @@ def get_layout_cntrl_exc():
         xanchor="right",
         x=legend_x,
     ),
-    title=dict(text="Excitatory node",font=dict(size=24,color=darkgrey),pad=dict(l=0, r=2, t=2, b=2)),
+    title=dict(text="Excitatory population",font=dict(size=text_fontsize,color=darkgrey),pad=dict(l=0, r=2, t=2, b=2)),
     xaxis=dict(
         domain=[0., 1.],
         range=[0.,simulation_duration],
         constrain="domain",
         tick0=0.,
         dtick=simulation_duration/8.,
+        tickfont=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
         gridcolor=midgrey,
         title=dict(
             text="Simulation time [ms]",
-            standoff=0.,
+            font=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
+            standoff=10.,
                   ),
         position=0.,
         zeroline=True,
@@ -428,10 +402,12 @@ def get_layout_cntrl_exc():
         constrain="domain",
         tick0=0.,
         dtick=25.,
+        tickfont=dict(size=text_fontsize,color=darkgrey),
         gridcolor=midgrey,
         title=dict(
             text="Activity [Hz]",
-            standoff=0.,
+            font=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
+            standoff=10.,
                   ),
         zeroline=True,
         zerolinecolor=darkgrey,
@@ -443,10 +419,12 @@ def get_layout_cntrl_exc():
         constrain="domain",
         tick0=0.,
         dtick=simulation_duration/8.,
+        tickfont=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
         gridcolor=midgrey,
         title=dict(
             text="Simulation time [ms]",
-            standoff=0.,
+            font=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
+            standoff=10.,
                   ),
         position=0.,
         zeroline=True,
@@ -460,9 +438,11 @@ def get_layout_cntrl_exc():
         constrain="domain",
         tick0=0.,
         dtick=0.4,
+        tickfont=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
         gridcolor=midgrey,
         title=dict(
-            text="Control current [nA]",
+            text="Control [nA]",
+            font=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
             standoff=10.,
                   ),
         zeroline=True,
@@ -470,98 +450,6 @@ def get_layout_cntrl_exc():
         zerolinewidth=1,
     ),
     )
-
-def get_button():
-    return dict(
-        buttons=[],
-        direction="down",
-        pad={"r": 10, "t": 0},
-        showactive=True,
-        x=x_button,
-        xanchor="left",
-        yanchor="top",
-        font=font_buttons,
-        bordercolor=darkgrey,
-        borderwidth=1,
-        )
-
-def get_updatemenus():
-    
-    # relayout: args properties of annotation
-    # update: args properties of data
-    # animate: args properties of data
-    # restyle:
-    
-    button0 = get_button()
-    button0.update(buttons=list([
-                dict(
-                    args=[{'updatemenus[0].active':0}],
-                    label="Low to high",
-                    method="relayout",
-                ),
-                dict(
-                    args=[{'updatemenus[0].active':1}],
-                    label="High to low",
-                    method="relayout",
-                ),
-                ]))
-    button0.update(y=y_buttons)
-    
-    button1 = get_button()
-    button1.update(buttons=list([
-                dict(
-                    args=[{'updatemenus[1].active':0}],
-                    label="Sparsity",
-                    method="relayout"
-                ),
-                dict(
-                    args=[{'updatemenus[1].active':1}],
-                    label="Energy",
-                    method="relayout"
-                ),
-            ]))
-    button1.update(y=y_buttons-dist_buttons)     
-    
-    return [button0, button1]
-
-def get_updatemenus_final():
-    
-    # relayout: args properties of annotation
-    # update: args properties of data
-    # animate: args properties of data
-    # restyle:
-    
-    button0 = get_button()
-    button0.update(buttons=list([
-                dict(
-                    args=[{'updatemenus[0].active':0}],
-                    label="Low to high",
-                    method="relayout",
-                ),
-                dict(
-                    args=[{'updatemenus[0].active':1}],
-                    label="High to low",
-                    method="relayout",
-                ),
-                ]))
-    button0.update(y=y_buttons)
-    
-    button1 = get_button()
-    button1.update(buttons=list([
-                dict(
-                    args=[{'updatemenus[1].active':0}],
-                    label="Sparsity",
-                    method="relayout"
-                ),
-                dict(
-                    args=[{'updatemenus[1].active':1}],
-                    label="Energy",
-                    method="relayout"
-                ),
-            ]))
-    button1.update(y=y_buttons-dist_buttons)     
-    
-    return [button0, button1]
         
 def get_img(img_path, control_case, index):
     img_source = img_path + str(control_case) + os.sep + str(index) + '.png'
@@ -637,7 +525,7 @@ def get_empty_control():
         y=[],
         xaxis="x2",
         yaxis="y2",
-        name="Control current to excitatory node",
+        name="Control to excitatory population",
         line_color='rgba' + str(cmap(3)),
         showlegend=False,
         hoverinfo='x+y',
@@ -647,7 +535,7 @@ def get_empty_control():
         y=[],
         xaxis="x2",
         yaxis="y2",
-        name="Control current to inhibitory node",
+        name="Control to inhibitory population",
         line_color='rgba' + str(cmap(0)),
         showlegend=False,
         hoverinfo='x+y',
@@ -663,6 +551,7 @@ def get_bistable_paths(boundary_bi_exc, boundary_bi_inh):
         opacity=0.2,
         layer="below",
     )
+
 
 
 def get_osc_path(boundary_LC_exc, boundary_LC_inh):
