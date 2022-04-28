@@ -93,153 +93,6 @@ def get_background(xmin, xmax, dx, ymin, ymax, dy):
 
 def get_time(model, dur_):
     return np.arange(0., dur_/model.params.dt + model.params.dt, model.params.dt)
-
-def plot_trace(model, x_, y_, trace0, trace1):
-    model.params.duration = step_current_duration
-
-    stepcontrol_ = model.getZeroControl()
-    stepcontrol_ = functions.step_control(model, maxI_ = max_step_current)
-
-    model.params.mue_ext_mean = x_ * 5.
-    model.params.mui_ext_mean = y_ * 5.
-    time_ = get_time(model, step_current_duration)
-
-    model.run(control=stepcontrol_)
-    
-    trace0.x = time_
-    trace0.y = model.rates_exc[0,:]
-    
-    trace1.x = time_
-    trace1.y = model.rates_inh[0,:]
-    
-def setinit(model, init_vars_):
-    init_vars = model.init_vars
-    state_vars = model.state_vars
-    for iv in range(len(init_vars)):
-        for sv in range(len(state_vars)):
-            if state_vars[sv] in init_vars[iv]:
-                #print("set init vars ", )
-                if model.params[init_vars[iv]].ndim == 2:
-                    model.params[init_vars[iv]][0,:] = init_vars_[sv]
-                else:
-                    model.params[init_vars[iv]][0] = init_vars_[sv]
-    
-def DC_trace(model, x_, y_, start_, dur_, amp_, sim_dur, case_, trans_time_, weights,
-             optimal_control, optimal_cost_node, optimal_weights, plot_ = False, max_it = 0):
-    
-    dt = model.params.dt
-
-    model.params.mue_ext_mean = x_ * 5.
-    model.params.mui_ext_mean = y_ * 5.
-    
-    model.params.duration = 3000.
-    
-    if case_ in ['1', '2']:
-        maxI = 3.
-    elif case_ in ['3', '4']:
-        maxI = -3.
-    elif case_[0] == '0':
-        maxI = 3.
-    else:
-        maxI = -3.
-            
-    control0 = model.getZeroControl()
-    control0 = functions.step_control(model, maxI_ = maxI)
-    model.run(control=control0)
-
-    target_rates = np.zeros((2))
-    target_rates[0] = model.rates_exc[0,-1] 
-    target_rates[1] = model.rates_inh[0,-1]
-
-    control0 = functions.step_control(model, maxI_ = - maxI)
-    model.run(control=control0)
-        
-    state_vars = model.state_vars
-
-    init_state_vars = np.zeros(( len(state_vars) ))
-    for j in range(len(state_vars)):
-        if model.state[state_vars[j]].size == 1:
-            init_state_vars[j] = model.state[state_vars[j]][0]
-        else:
-            init_state_vars[j] = model.state[state_vars[j]][0,-1]
-
-    model.params.duration = sim_dur
-    target_ = model.getZeroTarget()
-    target_[:,0,:] = target_rates[0]
-    target_[:,1,:] = target_rates[1]
-        
-    int_start = int( start_ / dt )
-    int_stop = int_start + int( dur_ / dt )
-    DC_control_ = model.getZeroControl()
-    DC_control_[0,0,int_start:int_stop] = amp_[0]
-    DC_control_[0,1,int_start:int_stop] = amp_[1]
-
-    setinit(model, init_state_vars)
-    model.run(control=DC_control_)
-    state0_ = model.getZeroState()
-    state0_[0,0,:] = model.rates_exc[0,:]
-    state0_[0,1,:] = model.rates_inh[0,:]
-    
-    #print(state0_[0,0,0], state0_[0,0,-1], state0_[0,1,0], state0_[0,1,-1])
-    #print(target_[0,0,0], target_[0,1,0])
-        
-    prec_variables = [0]
-    
-    T = int(sim_dur/dt + 1)
-    target__ = target_.copy()
-    for t in range(T):
-        if t / T < trans_time_:
-            target__[:,:,t] = -1000.
-                
-    cost_node = cost.cost_int_per_node(1, 6, int(sim_dur/dt + 1), dt, state0_, target__,
-                                     DC_control_, weights[0], weights[1], weights[2], v_ = prec_variables )
-        
-    #print('precision cost: ', cost_node[0][0][0])
-    #print('sparsity cost: ', cost_node[2][0][:])
-    #print('energy cost: ', cost_node[1][0][:])
-    
-    if max_it == 0:
-        if plot_:
-            plotFunc.plot_control_current(model, [DC_control_, optimal_control],
-                [cost_node, optimal_cost_node], [weights, optimal_weights, weights], sim_dur,
-                0., 0., init_state_vars, target_, '', filename_ = '', transition_time_ = trans_time_,
-                labels_ = ["DC control", "Optimal control"], print_cost_=False)
-    
-        return cost_node, DC_control_
-    
-    c_scheme = np.zeros(( 1,1 ))
-    c_scheme[0,0] = 1.
-    u_mat = np.identity(1)
-    u_scheme = np.array([[1.]])
-    cost.setParams(1.0, 0., 1.)
-    
-    setinit(model, init_state_vars)
-        
-    bestControl_, bestState_, cost_, runtime_, grad_, phi_, costnode_ = model.A1(
-        DC_control_, target_, c_scheme, u_mat, u_scheme, max_iteration_ = max_it, tolerance_ = 1e-16,
-        startStep_ = 10., max_control_ = np.array([5.,5.,0.,0.,0.,0.]), min_control_ = np.array([-5.,-5.,0.,0.,0.,0.]), t_sim_ = sim_dur,
-        t_sim_pre_ = 10., t_sim_post_ = 10., CGVar = None, control_variables_ = [0],
-        prec_variables_ = [0], transition_time_ = trans_time_)
-    
-    optimal_control_shift = np.zeros(( optimal_control.shape ))
-    optimal_control_shift[:,:,:-1100] = optimal_control[:,:,1100:]
-    
-    setinit(model, init_state_vars)
-    
-    bestControl_shift, bestState_shift, cost_shift, runtime_shift, grad_shift, phi_shift, costnode_shift = model.A1(
-        optimal_control_shift, target_, c_scheme, u_mat, u_scheme, max_iteration_ = max_it, tolerance_ = 1e-16,
-        startStep_ = 10., max_control_ = np.array([5.,5.,0.,0.,0.,0.]), min_control_ = np.array([-5.,-5.,0.,0.,0.,0.]), t_sim_ = sim_dur,
-        t_sim_pre_ = 10., t_sim_post_ = 10., CGVar = None, control_variables_ = [0],
-        prec_variables_ = [0], transition_time_ = trans_time_)
-        
-    
-    if plot_:
-        plotFunc.plot_control_current(model, [DC_control_, optimal_control, bestControl_[:,:,100:-100], bestControl_shift[:,:,100:-100]],
-            [cost_node, optimal_cost_node, costnode_, costnode_shift], [weights, optimal_weights, weights, weights], sim_dur,
-            0., 0., init_state_vars, target_, '', filename_ = '', transition_time_ = trans_time_,
-            labels_ = ["DC control", "Optimal control", "Optimal from DC", "Optimal shift"], print_cost_=False)
-    
-    return cost_node, DC_control_
     
 def get_step_current_traces(model):
     
@@ -287,41 +140,9 @@ def trace_step(model, x_, y_):
     
     return time_, trace_exc, trace_inh
 
-
-def get_target(model, x_, y_, case_):
-        
-        dt = model.params.dt
-        sim_duration = model.params.duration
-
-        model.params.mue_ext_mean = x_ * 5.
-        model.params.mui_ext_mean = y_ * 5.
+def read_data_1(readpath, case):
     
-        model.params.duration = 3000.
-    
-        if case_ in ['1', '2']:
-            maxI = 3.
-        elif case_ in ['3', '4']:
-            maxI = -3.
-        elif case_[0] == '0':
-            maxI = 3.
-        else:
-            maxI = -3.
-        control0 = model.getZeroControl()
-        control0 = functions.step_control(model, maxI_ = maxI)
-        
-        model.run(control=control0)
-
-        target_rates = np.zeros((2))
-        target_rates[0] = model.rates_exc[0,-1] 
-        target_rates[1] = model.rates_inh[0,-1]
-
-        model.params.duration = sim_duration
-        
-        return target_rates
-
-def read_data_1(model, readpath, case):
-    
-    ind_, type_, mu_e, mu_i, a_e, a_i, cost_node, w_e, w_i, target_high, target_low = [], [], [], [], [], [], [], [], [], [], []
+    ind_, type_, mu_e, mu_i, cost_node = [], [], [], [], []
     # type: 0 - exc; 1 - inh; 2 - both; 3 - no solution; 4 - not checked
     
     file_ = os.sep + 'bi.pickle'
@@ -347,7 +168,6 @@ def read_data_1(model, readpath, case):
     
     ind_, type_, mu_e, mu_i = [None] * len(ext_exc), [None] * len(ext_exc), [None] * len(ext_exc), [None] * len(ext_exc)
     cost_node = [None] * len(ext_exc)
-    target_high, target_low = [None] * len(ext_exc), [None] * len(ext_exc)
 
     [bestControl_0, bestState_0, costnode_0] = read_control(readpath, case)
     
@@ -384,11 +204,8 @@ def read_data_1(model, readpath, case):
             print(i, " no category")
 
             cost_node[i] = costnode_0[i]
-        
-        target_high[i] = get_target(model, ext_exc[i], ext_inh[i], '1')
-        target_low[i] = get_target(model, ext_exc[i], ext_inh[i], '3')   
     
-    return ind_, type_, mu_e, mu_i, cost_node, target_high, target_low        
+    return ind_, type_, mu_e, mu_i, cost_node
 
 def read_control(readpath, case):
     
@@ -511,50 +328,8 @@ def update_data(fig, be, bi, e1, i1, e2, i2):
     if len(e2) == 0:
         data2.x = [None]
         data2.y = [None]
-        
-def dist_right(e_, i_, exc__, inh__, grid_resolution_):
-    row = []
-    for i in range(len(inh__)):
-        if np.abs(i_ - inh__[i]) < 1e-6:
-            row.append(exc__[i])
-    upper_bound = max(row)
-    dist = upper_bound - e_ + grid_resolution_/2.
-    return dist
-
-def dist_left(e_, i_, exc__, inh__, grid_resolution_):
-    row = []
-    for i in range(len(inh__)):
-        if np.abs(i_ - inh__[i]) < 1e-6:
-            row.append(exc__[i])
-    lower_bound = min(row)
-    dist = e_ - lower_bound + grid_resolution_/2.
-    return dist
-
-def dist_low(e_, i_, exc__, inh__, grid_resolution_):
-    column = []
-    for i in range(len(exc__)):
-        if np.abs(e_ - exc__[i]) < 1e-6:
-            column.append(inh__[i])
-    lower_bound = min(column)
-    dist = i_ - lower_bound + grid_resolution_/2.
-    return dist
-
-def dist_up(e_, i_, exc__, inh__, grid_resolution_):
-    column = []
-    for i in range(len(inh__)):
-        if np.abs(e_ - exc__[i]) < 1e-6:
-            column.append(inh__[i])
-    upper_bound = max(column)
-    dist = upper_bound - i_ + grid_resolution_/2.
-    return dist
 
 def set_opt_cntrl_plot_zero(figure_, index_list):
     for i_ in index_list:
         figure_.data[i_].x = []
         figure_.data[i_].y = []
-    
-def set_data(fig, index, data):
-    fig.data[index].x = data.x
-    fig.data[index].y = data.y
-    #s = [0.] * len(data.x)
-    #fig.data[index].marker.size = s

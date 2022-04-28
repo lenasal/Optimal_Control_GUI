@@ -177,58 +177,6 @@ def get_label_up():
         align="center",
         )
 
-def get_label_exc():
-    return go.Annotation(
-        x=exc_x,
-        xanchor='center',
-        y=e_i_y,
-        yanchor='top',
-        text=("<b>Excitatory population</b>"),
-        xref="paper",
-        yref="paper",
-        showarrow=False,
-        font=dict(
-            size=text_fontsize,
-            color=darkgrey,
-            ),
-        align="center",
-        )
-
-def get_label_inh():
-    return go.Annotation(
-        x=inh_x,
-        xanchor='center',
-        y=e_i_y,
-        yanchor='top',
-        text=("<b>Inhibitory population</b>"),
-        xref="paper",
-        yref="paper",
-        showarrow=False,
-        font=dict(
-            size=text_fontsize,
-            color=darkgrey,
-            ),
-        align="center",
-        )
-
-def get_label_cost():
-    return go.Annotation(
-        x=control_trace_x,
-        xanchor='left',
-        y=-0.04,
-        yanchor='bottom',
-        text=("P:<br>"
-              "S:<br>"
-              "E:"),
-        xref="paper",
-        yref="paper",
-        showarrow=False,
-        font=dict(
-            size=text_fontsize,
-            color=darkgrey,
-            ),
-        align="left",
-        )
 
 def boundary_path(p_e, p_i):
     polygon = "M" + str(p_e[0]) + "," + str(p_i[0])
@@ -252,8 +200,6 @@ def get_layout_bifurcation():
         x=legend_x,
         font=dict(size=text_fontsize, color=darkgrey),
     ),
-    #title=dict(text="Case 00000",font=dict(size=1,color=midgrey),pad=dict(l=2, r=2, t=2, b=2),),
-    #legend_title="Legend Title",
     xaxis=dict(
         domain=[0., 1.],
         range=x_plotrange,
@@ -282,7 +228,6 @@ def get_layout_bifurcation():
             font=dict(size=text_fontsize, color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
             standoff=10.,
                   ),
-        
     ),
     )
 
@@ -450,28 +395,6 @@ def get_layout_cntrl_exc():
         zerolinewidth=1,
     ),
     )
-        
-def get_img(img_path, control_case, index):
-    img_source = img_path + str(control_case) + os.sep + str(index) + '.png'
-        
-    if not Path(img_source).is_file():
-        print("image not found")
-        return dict()
-    
-    #print("show image with path", img_source)
-    return dict(
-        source=img_source,
-        xref="paper",
-        yref="paper",
-        #sizing="contain",
-        x=control_trace_x,
-        y=control_trace_y,
-        sizex=control_trace_size,
-        sizey=control_trace_size,
-        opacity=1.,
-        xanchor="left",
-        yanchor="top",
-        )
 
 def get_empty_traces():
     trace10 = go.Scatter(
@@ -552,8 +475,6 @@ def get_bistable_paths(boundary_bi_exc, boundary_bi_inh):
         layer="below",
     )
 
-
-
 def get_osc_path(boundary_LC_exc, boundary_LC_inh):
     return dict(
         type="path",
@@ -563,7 +484,6 @@ def get_osc_path(boundary_LC_exc, boundary_LC_inh):
         opacity=0.2,
         layer="below",
     )
-
 
 def get_LC_up_path(boundary_LC_up_exc, boundary_LC_up_inh):
     return dict(

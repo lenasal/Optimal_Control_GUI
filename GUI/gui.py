@@ -14,6 +14,8 @@ path = os.getcwd().split(os.sep +'GUI')[0]
 if path not in sys.path:
     sys.path.append(path)
 
+#from neurolib.utils.costFunctions import cost_int_per_node
+
 from neurolib.models.aln import ALNModel
 from neurolib.dashboard import layout as layout
 import neurolib.dashboard.functions as functions
@@ -48,17 +50,15 @@ tasks = ['LH1: low to high, L1 cost constraints',
          'HL1: high to low, L1 cost constraints',
          'HL2: high to low, L2 cost constraints']
 
-global ind_, type_, mu_e, mu_i, cost_node, target_high, target_low
+global ind_, type_, mu_e, mu_i, cost_node
 global bestControl_0, bestState_0, costnode_0
 global case
 
 case = '1'
 
-data_array = data.read_data_1(aln, readpath, case)
-ind_, type_, mu_e, mu_i, cost_node, target_high, target_low = data_array
+data_array = data.read_data_1(readpath, case)
+ind_, type_, mu_e, mu_i, cost_node = data_array
 [bestControl_0, bestState_0, costnode_0] = data.read_control(readpath, case)
-
-print(bestControl_0[0], costnode_0[0])
 
 data0, data1, data6 = data.get_scatter_data_1(type_, mu_e, mu_i)
 data_background = data.get_data_background(data0.x, data0.y, data1.x, data1.y)
@@ -101,7 +101,6 @@ fig_tab_cost = go.Figure(
         cells=dict(values=[['Precision', 'Sparsity', 'Energy'], [0., 0., 0.], [0., 0., 0.]], fill_color=[[layout.lightgrey, layout.lightgrey, layout.darkgrey]*3], font=dict(size=layout.text_fontsize), height=layout.text_fontsize+10)
         )
     )
-
 
 case = '1'
 
@@ -173,7 +172,7 @@ def set_marker(selection_click, selection_drop):
     if not dash.callback_context.triggered:
         return fig_bifurcation, fig_opt_cntrl_exc, fig_opt_cntrl_inh, fig_time_series_exc, fig_time_series_inh, fig_tab_cost
     
-    global ind_, type_, mu_e, mu_i, cost_node, target_high, target_low, case
+    global ind_, type_, mu_e, mu_i, cost_int_per_node, case
     global bestControl_0, bestState_0, costnode_0
         
     if dash.callback_context.triggered[0]['prop_id'] == 'bifurcation_diagram.clickData':
@@ -247,8 +246,8 @@ def set_marker(selection_click, selection_drop):
         for fig, i_list in zip([fig_opt_cntrl_exc, fig_opt_cntrl_inh, fig_time_series_exc, fig_time_series_inh], [[0,1], [0,1], [1], [1]]):
             data.set_opt_cntrl_plot_zero(fig, i_list)   
         
-        data_array = data.read_data_1(aln, readpath, case)
-        ind_, type_, mu_e, mu_i, cost_node, target_high, target_low = data_array
+        data_array = data.read_data_1(readpath, case)
+        ind_, type_, mu_e, mu_i, cost_node = data_array
         [bestControl_0, bestState_0, costnode_0] = data.read_control(readpath, case)
 
         
