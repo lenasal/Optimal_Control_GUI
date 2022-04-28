@@ -45,13 +45,12 @@ def remove_from_background(x, y, exc_1, inh_1):
     
     return x, y
 
-def get_data_background(exc_1, inh_1, exc_2, inh_2, exc_4, inh_4):
+def get_data_background(exc_1, inh_1, exc_2, inh_2):
     background_x, background_y = get_background(layout.x_plotrange[0], layout.x_plotrange[1], background_dx_,
                                                 layout.y_plotrange[0], layout.y_plotrange[1], background_dy_)
     
     background_x, background_y = remove_from_background(background_x, background_y, exc_1, inh_1)
     background_x, background_y = remove_from_background(background_x, background_y, exc_2, inh_2)
-    background_x, background_y = remove_from_background(background_x, background_y, exc_4, inh_4)
     
     return go.Scatter(
     x=background_x,
@@ -347,10 +346,10 @@ def read_data_1(model, readpath, case):
     ext_inh = load_array[1]
     
     ind_, type_, mu_e, mu_i = [None] * len(ext_exc), [None] * len(ext_exc), [None] * len(ext_exc), [None] * len(ext_exc)
-    a_e, a_i, cost_node = [None] * len(ext_exc), [None] * len(ext_exc), [None] * len(ext_exc)
-    w_e, w_i, target_high, target_low = [None] * len(ext_exc), [None] * len(ext_exc), [None] * len(ext_exc), [None] * len(ext_exc)
+    cost_node = [None] * len(ext_exc)
+    target_high, target_low = [None] * len(ext_exc), [None] * len(ext_exc)
 
-    [bestControl_init, costnode_init, bestControl_0, bestState_0, costnode_0] = read_control(readpath, case)
+    [bestControl_0, bestState_0, costnode_0] = read_control(readpath, case)
     
     for i in range(len(ext_exc)):
         
@@ -359,66 +358,37 @@ def read_data_1(model, readpath, case):
         mu_i[i] = ext_inh[i]
         
         if type(bestControl_0[i]) is type(None):
-            type_[i] = 4
+            type_[i] = 6
             continue
         
-        cost_node[i] = costnode_0
-        
-        target_high[i] = get_target(model, ext_exc[i], ext_inh[i], '1')
-        target_low[i] = get_target(model, ext_exc[i], ext_inh[i], '3')
-                  
-        target_rates = get_target(model, ext_exc[i], ext_inh[i], case)
+        limit_signal = 1e-8
+        max_signal = np.amax(np.abs(bestControl_0[i][0,:,:]))
                     
-        if ( np.abs(np.mean(bestState_0[i][0,0,-50:]) - target_rates[0]) >
-        0.3 * np.abs(np.mean(bestState_0[i][0,0,:50]) - target_rates[0])
-        or np.abs(np.mean(bestState_0[i][0,1,-50:]) - target_rates[1]) >
-        0.5 * np.abs(np.mean(bestState_0[i][0,1,:50]) - target_rates[1]) ):
-            type_[i] = 3
+        if np.amax(np.abs(bestControl_0[i][0,:,:])) < limit_signal:
+            type_[i] = 6
+            bestControl_0[i] = None
             continue
-            
-        elif np.amax(np.abs(bestControl_0[i][0,1,:])) < 1e-8 and np.amax(np.abs(bestControl_0[i][0,0,:])) > 1e-8:
+        elif max_signal == np.amax(np.abs(bestControl_0[i][0,0,:])):
             type_[i] = 0
-        elif np.amax(np.abs(bestControl_0[i][0,0,:])) < 1e-8 and np.amax(np.abs(bestControl_0[i][0,1,:])) > 1e-8:
+        elif max_signal == np.amax(np.abs(bestControl_0[i][0,1,:])):
             type_[i] = 1
-        elif np.amax(np.abs(bestControl_0[i][0,0,:])) > 1e-8 and np.amax(np.abs(bestControl_0[i][0,1,:])) > 1e-8:
+        elif max_signal == np.amax(np.abs(bestControl_0[i][0,2,:])):
             type_[i] = 2
-        elif np.amax(np.abs(bestControl_0[i][0,0,:])) < 1e-8 and np.amax(np.abs(bestControl_0[i][0,1,:])) < 1e-8:
+        elif max_signal == np.amax(np.abs(bestControl_0[i][0,3,:])):
             type_[i] = 3
-            continue
+        elif max_signal == np.amax(np.abs(bestControl_0[i][0,4,:])):
+            type_[i] = 4
+        elif max_signal == np.amax(np.abs(bestControl_0[i][0,5,:])):
+            type_[i] = 5
         else:
             print(i, " no category")
-    
-        lenx = np.amax(bestControl_0[i][0,0,:])
-        if np.abs(np.amin(bestControl_0[i][0,0,:])) > np.abs(lenx):
-            lenx = np.amin(bestControl_0[i][0,0,:])
-        leny = np.amax(bestControl_0[i][0,1,:])
-        if np.abs(np.amin(bestControl_0[i][0,1,:])) > np.abs(leny):
-            leny = np.amin(bestControl_0[i][0,1,:])
-        a_e[i] = lenx
-        a_i[i] = leny
-        
-        w_e[i] = get_width(bestControl_0[i][0,0,:], model.params.dt)
-        w_i[i] = get_width(bestControl_0[i][0,1,:], model.params.dt)    
-    
-    return ind_, type_, mu_e, mu_i, a_e, a_i, cost_node, w_e, w_i, target_high, target_low
 
-def get_width(node_control_, dt):
-    start_ind = 0
-    stop_ind = 0
-    max_ = np.amax(np.abs(node_control_))
-    for t in range(len(node_control_)):
-        if start_ind == 0:
-            if np.abs(node_control_[t]) >= max_/2.:
-                start_ind = t
-            continue
-        else:
-            if np.abs(node_control_[t]) < max_/2.:
-                stop_ind = t
-                break
-            
-    width = (stop_ind - start_ind) / dt
-    return width
+            cost_node[i] = costnode_0[i]
         
+        target_high[i] = get_target(model, ext_exc[i], ext_inh[i], '1')
+        target_low[i] = get_target(model, ext_exc[i], ext_inh[i], '3')   
+    
+    return ind_, type_, mu_e, mu_i, cost_node, target_high, target_low        
 
 def read_control(readpath, case):
     
@@ -439,40 +409,40 @@ def read_control(readpath, case):
 
     bestControl_ = load_array[0]
     bestState_ = load_array[1]
-    costnode_ = load_array[6]
+    costnode_ = load_array[3]
         
-    return [None, None, bestControl_, bestState_, costnode_]
+    return [bestControl_, bestState_, costnode_]
 
-def get_scatter_data_1(ind_, type_, mu_e, mu_i, a_e, a_i):
+def get_scatter_data_1(type_, mu_e, mu_i):
     
+    data0_x = []
+    data0_y = []
     data1_x = []
     data1_y = []
-    data2_x = []
-    data2_y = []
-    data4_x = []
-    data4_y = []
+    data6_x = []
+    data6_y = []
     
     for i in range(len(type_)):
-        if type_[i] in [0,1,2]:
-            if np.abs(a_e[i]) > np.abs(a_i[i]):
+            if type_[i] == 0:
+                data0_x.append(mu_e[i])
+                data0_y.append(mu_i[i])
+            elif type_[i] == 1:
                 data1_x.append(mu_e[i])
                 data1_y.append(mu_i[i])
-            elif np.abs(a_e[i]) <= np.abs(a_i[i]):
-                data2_x.append(mu_e[i])
-                data2_y.append(mu_i[i])
-        if type_[i] == 3:
-            data4_x.append(mu_e[i])
-            data4_y.append(mu_i[i])
-    
-    data1 = go.Scatter(
-        x=data1_x,
-        y=data1_y,
+            elif type_[i] == 6:
+                data6_x.append(mu_e[i])
+                data6_y.append(mu_i[i])
+
+
+    data0 = go.Scatter(
+        x=data0_x,
+        y=data0_y,
         marker=dict(
             line=dict(width=1,
                       color='rgba' + str(cmap(3)),
                 ),
             color='rgba' + str(cmap(3)),
-            size=[layout.markersize] * len(data1_x)
+            size=[layout.markersize] * len(data0_x)
         ),
         mode='markers',
         name='Excitatory control prevailing',
@@ -481,128 +451,50 @@ def get_scatter_data_1(ind_, type_, mu_e, mu_i, a_e, a_i):
         hoverinfo='x+y',
         uid='1',
         )
-
-    data2 = go.Scatter(
-        x=data2_x,
-        y=data2_y,
+        
+    data1 = go.Scatter(
+        x=data1_x,
+        y=data1_y,
         marker=dict(
             line=dict(width=1,
                       color='rgba' + str(cmap(0)),
                 ),
             color='rgba' + str(cmap(0)),
-            size=[layout.markersize] * len(data2_x),
+            size=[layout.markersize] * len(data1_x),
         ),
         mode='markers',
         name='Inhibitory control prevailing',
         hoverinfo='x+y',
         uid='2',
         )
-    
-    data4 = go.Scatter(
-        x=data4_x,
-        y=data4_y,
+
+    data6 = go.Scatter(
+        x=data6_x,
+        y=data6_y,
         marker=dict(
             line=dict(width=1,
                       color='rgba' + str(cmap(7)),
                 ),
             color='rgba' + str(cmap(7)),
-            size=[layout.markersize] * len(data4_x),
+            size=[layout.markersize] * len(data6_x),
         ),
         mode='markers',
         name='No solution found',
         hoverinfo='x+y',
-        uid='4',
+        uid='7',
         )
 
-    return data1, data2, data4
-    
+    return data0, data1, data6
 
-def get_scatter_data(exc_1, inh_1, exc_2, inh_2, exc_3, inh_3, exc_4, inh_4):
+def update_data(fig, be, bi, e1, i1, e2, i2):
 
-    data1 = go.Scatter(
-        x=exc_1,
-        y=inh_1,
-        marker=dict(
-            line=dict(width=1,
-                      color='rgba' + str(cmap(3)),
-                ),
-            color='rgba' + str(cmap(3)),
-            size=[layout.markersize] * len(exc_1)
-        ),
-        mode='markers',
-        name='Excitatory current only',
-        hoverinfo='x+y',
-        uid='1',
-        )
-    
-    if len(exc_1) == 0:
-        data1.x = [None]
-        data1.y = [None]
-
-    data2 = go.Scatter(
-        x=exc_2,
-        y=inh_2,
-        marker=dict(
-            line=dict(width=1,
-                      color='rgba' + str(cmap(0)),
-                ),
-            color='rgba' + str(cmap(0)),
-            size=[layout.markersize] * len(exc_2),
-        ),
-        mode='markers',
-        name='Inhibitory current only',
-        hoverinfo='x+y',
-        uid='2',
-        )
-    
-    if len(exc_2) == 0:
-        data2.x = [None]
-        data2.y = [None]
-    
-    
-    data3 = go.Scatter(
-        x=exc_3,
-        y=inh_3,
-        marker=dict(
-            line=dict(width=1,
-                      color='rgba' + str(cmap(2)),
-                ),
-            color='rgba' + str(cmap(2)),
-            size=[layout.markersize] * len(exc_3)
-        ),
-        mode='markers',
-        name='Control in both nodes',
-        hoverinfo='x+y',
-        uid='3',
-        )
-    
-    if len(exc_3) == 0:
-        data3.x = [None]
-        data3.y = [None]
-
-    data4 = go.Scatter(
-        x=exc_4,
-        y=inh_4,
-        marker=dict(
-            line=dict(width=1,
-                      color='rgba' + str(cmap(7)),
-                ),
-            color='rgba' + str(cmap(7)),
-            size=[layout.markersize] * len(exc_4),
-        ),
-        mode='markers',
-        name='No control result',
-        hoverinfo='x+y',
-        uid='4',
-        )
-    
-    if len(exc_4) == 0:
-        data4.x = [None]
-        data4.y = [None]
-    
-    return data1, data2, data3, data4
-
-def update_data(fig, e1, i1, e2, i2, e3, i3, e4, i4):
+    datab = fig.data[1]
+    datab.x = e1
+    datab.y = i1
+    datab.marker.size=[0.] * len(be)
+    if len(be) == 0:
+        datab.x = [None]
+        datab.y = [None]
     
     data1 = fig.data[1]
     data1.x = e1
@@ -619,22 +511,6 @@ def update_data(fig, e1, i1, e2, i2, e3, i3, e4, i4):
     if len(e2) == 0:
         data2.x = [None]
         data2.y = [None]
-        
-    data3 = fig.data[3]
-    data3.x = e3
-    data3.y = i3
-    data3.marker.size=[layout.markersize] * len(e3)
-    if len(e3) == 0:
-        data3.x = [None]
-        data3.y = [None]
-        
-    data4 = fig.data[4]
-    data4.x = e4
-    data4.y = i4
-    data4.marker.size=[layout.markersize] * len(e4)
-    if len(e4) == 0:
-        data4.x = [None]
-        data4.y = [None]
         
 def dist_right(e_, i_, exc__, inh__, grid_resolution_):
     row = []
@@ -680,3 +556,5 @@ def set_opt_cntrl_plot_zero(figure_, index_list):
 def set_data(fig, index, data):
     fig.data[index].x = data.x
     fig.data[index].y = data.y
+    #s = [0.] * len(data.x)
+    #fig.data[index].marker.size = s

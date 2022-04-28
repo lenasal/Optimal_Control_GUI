@@ -67,7 +67,7 @@ background_markersize = 18
 
 step_current_duration = 2000.
 max_step_current = 3.
-simulation_duration = 400.
+simulation_duration = 500.
 
 
 def get_rgb_string_from_rgba(rgba_val):
@@ -382,7 +382,7 @@ def get_layout_cntrl_exc():
         range=[0.,simulation_duration],
         constrain="domain",
         tick0=0.,
-        dtick=simulation_duration/8.,
+        dtick=simulation_duration/5.,
         tickfont=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
         gridcolor=midgrey,
         title=dict(
@@ -418,7 +418,7 @@ def get_layout_cntrl_exc():
         range=[0.,simulation_duration],
         constrain="domain",
         tick0=0.,
-        dtick=simulation_duration/8.,
+        dtick=simulation_duration/5.,
         tickfont=dict(size=text_fontsize,color=darkgrey),#pad=dict(l=2, r=2, t=2, b=2),
         gridcolor=midgrey,
         title=dict(

@@ -48,20 +48,20 @@ tasks = ['LH1: low to high, L1 cost constraints',
          'HL1: high to low, L1 cost constraints',
          'HL2: high to low, L2 cost constraints']
 
-global ind_, type_, mu_e, mu_i, a_e, a_i, cost_node, w_e, w_i, target_high, target_low
-global bestControl_init, costnode_init, bestControl_0, bestState_0, costnode_0
+global ind_, type_, mu_e, mu_i, cost_node, target_high, target_low
+global bestControl_0, bestState_0, costnode_0
 global case
 
 case = '1'
 
 data_array = data.read_data_1(aln, readpath, case)
-ind_, type_, mu_e, mu_i, a_e, a_i, cost_node, w_e, w_i, target_high, target_low = data_array
-[bestControl_init, costnode_init, bestControl_0, bestState_0, costnode_0] = data.read_control(readpath, case)
+ind_, type_, mu_e, mu_i, cost_node, target_high, target_low = data_array
+[bestControl_0, bestState_0, costnode_0] = data.read_control(readpath, case)
 
-print('read data case 1')
+print(bestControl_0[0], costnode_0[0])
 
-data1, data2, data4 = data.get_scatter_data_1(ind_, type_, mu_e, mu_i, a_e, a_i)
-data_background = data.get_data_background(data1.x, data1.y, data2.x, data2.y, data4.x, data4.y)
+data0, data1, data6 = data.get_scatter_data_1(type_, mu_e, mu_i)
+data_background = data.get_data_background(data0.x, data0.y, data1.x, data1.y)
 trace00, trace01 = data.get_step_current_traces(aln)
 trace10, trace11 = layout.get_empty_traces()
 
@@ -69,7 +69,7 @@ bistable_regime = layout.get_bistable_paths(boundary_bi_exc, boundary_bi_inh)
 oscillatory_regime = layout.get_osc_path(boundary_LC_exc, boundary_LC_inh)
 LC_up_regime = layout.get_LC_up_path(boundary_LC_up_exc, boundary_LC_up_inh)
 
-fig_bifurcation = go.FigureWidget(data=[data_background, data1, data2, data4])#, data3, data4])
+fig_bifurcation = go.FigureWidget(data=[data_background, data0, data1])
 fig_bifurcation.update_layout(shapes=[bistable_regime, oscillatory_regime, LC_up_regime])
 fig_bifurcation.add_annotation(layout.get_label_bistable())
 fig_bifurcation.add_annotation(layout.get_label_osc())
@@ -173,8 +173,8 @@ def set_marker(selection_click, selection_drop):
     if not dash.callback_context.triggered:
         return fig_bifurcation, fig_opt_cntrl_exc, fig_opt_cntrl_inh, fig_time_series_exc, fig_time_series_inh, fig_tab_cost
     
-    global ind_, type_, mu_e, mu_i, a_e, a_i, cost_node, w_e, w_i, target_high, target_low, case
-    global bestControl_init, costnode_init, bestControl_0, bestState_0, costnode_0
+    global ind_, type_, mu_e, mu_i, cost_node, target_high, target_low, case
+    global bestControl_0, bestState_0, costnode_0
         
     if dash.callback_context.triggered[0]['prop_id'] == 'bifurcation_diagram.clickData':
         pInd = selection_click['points'][0]['pointIndex']
@@ -248,14 +248,17 @@ def set_marker(selection_click, selection_drop):
             data.set_opt_cntrl_plot_zero(fig, i_list)   
         
         data_array = data.read_data_1(aln, readpath, case)
-        ind_, type_, mu_e, mu_i, a_e, a_i, cost_node, w_e, w_i, target_high, target_low = data_array
-        [bestControl_init, costnode_init, bestControl_0, bestState_0, costnode_0] = data.read_control(readpath, case)
+        ind_, type_, mu_e, mu_i, cost_node, target_high, target_low = data_array
+        [bestControl_0, bestState_0, costnode_0] = data.read_control(readpath, case)
+
         
-        data1, data2, data4 = data.get_scatter_data_1(ind_, type_, mu_e, mu_i, a_e, a_i)
-        data_background = data.get_data_background(data1.x, data1.y, data2.x, data2.y, data4.x, data4.y)
-        
-        for (j, data_) in zip(range(3), [data_background, data1, data2]):
-            data.set_data(fig_bifurcation, j, data_)
+        data0, data1, data6 = data.get_scatter_data_1(type_, mu_e, mu_i)
+        data_background = data.get_data_background(data0.x, data0.y, data1.x, data1.y)
+
+        data.update_data(fig_bifurcation, data_background.x, data_background.y, data0.x, data0.y, data1.x, data1.y)
+
+        for fig_ in fig_bifurcation.data[1:]:
+            functions.setdefaultmarkersize(layout.markersize, fig_)
         
         if case0 in ['1', '2'] and case in ['3', '4']:
             fig_opt_cntrl_exc.layout.yaxis2['range'] = [-2.2,0.2]
