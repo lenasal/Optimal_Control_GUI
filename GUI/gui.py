@@ -28,17 +28,17 @@ path = './'
 readpath = path + 'data_final' + os.sep
 
 ##### LOAD BOUNDARIES
-with open(path + 'boundary_bi_granular.pickle','rb') as file:
+with open(path + 'boundary_bi.pickle','rb') as file:
     load_array= pickle.load(file)
 boundary_bi_exc = load_array[0]
 boundary_bi_inh = load_array[1]
 
-with open(path + 'boundary_LC_granular.pickle','rb') as file:
+with open(path + 'boundary_LC.pickle','rb') as file:
     load_array= pickle.load(file)
 boundary_LC_exc = load_array[0]
 boundary_LC_inh = load_array[1]
 
-with open(path + 'boundary_LCbi_granular.pickle','rb') as file:
+with open(path + 'boundary_LCbi.pickle','rb') as file:
     load_array= pickle.load(file)
 boundary_LC_up_exc = load_array[0]
 boundary_LC_up_inh = load_array[1]
